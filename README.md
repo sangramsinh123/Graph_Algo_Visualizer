@@ -1,6 +1,6 @@
 # Graph Algorithm Visualizer
 
-![Graph Algorithm Visualizer](https://placeholder-for-project-image.png)
+![Graph Algorithm Visualizer](https://linkurious.com/images/uploads/2023/03/Community-detection-algorithm.png)
 
 ## Live Demo
 Check out the live demo: [Graph Algorithm Visualizer](https://graph-algorithm-visualizer-v1.netlify.app/)
@@ -112,4 +112,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-Created with ❤️ by Sangramsinh Patil
+Created with ❤️ by Sangramsinh
