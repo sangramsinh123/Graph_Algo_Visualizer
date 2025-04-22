@@ -1,6 +1,6 @@
 import React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RefreshCw, Plus, ChevronDown, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Play, Pause, RefreshCw, Plus, ChevronDown } from 'lucide-react';
 
 export default function GraphAlgorithmVisualizer() {
   const [nodes, setNodes] = useState([]);
@@ -12,7 +12,7 @@ export default function GraphAlgorithmVisualizer() {
   const [isAddingNode, setIsAddingNode] = useState(false);
   const [isAddingEdge, setIsAddingEdge] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
-  const [secondSelectedNode, setSecondSelectedNode] = useState(null);
+  // const [secondSelectedNode, setSecondSelectedNode] = useState(null);
   const [visitedNodes, setVisitedNodes] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
   const [showAlgorithmMenu, setShowAlgorithmMenu] = useState(false);
