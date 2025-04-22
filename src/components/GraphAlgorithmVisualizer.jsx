@@ -9,46 +9,64 @@ export default function GraphAlgorithmVisualizer() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('bfs');
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(500); // milliseconds
-  const [isAddingNode, setIsAddingNode] = useState(false);
   const [isAddingEdge, setIsAddingEdge] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
-  // const [secondSelectedNode, setSecondSelectedNode] = useState(null);
   const [visitedNodes, setVisitedNodes] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
   const [showAlgorithmMenu, setShowAlgorithmMenu] = useState(false);
   const [startNode, setStartNode] = useState(null);
+  const [mode, setMode] = useState('addNode'); // Default mode is adding nodes
   const svgRef = useRef(null);
   const animationRef = useRef(null);
 
   // Add a node at the specified position
   const addNode = (x, y) => {
-    const newNode = {
-      id: nodeIdCounter,
-      x: x,
-      y: y,
-      label: nodeIdCounter.toString()
-    };
+    // Check if we're clicking too close to an existing node
+    const tooClose = nodes.some(node => {
+      const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
+      return distance < 50; // Don't add nodes if they're closer than 50px
+    });
     
-    setNodes([...nodes, newNode]);
-    setNodeIdCounter(nodeIdCounter + 1);
+    if (!tooClose) {
+      const newNode = {
+        id: nodeIdCounter,
+        x: x,
+        y: y,
+        label: nodeIdCounter.toString()
+      };
+      
+      setNodes([...nodes, newNode]);
+      setNodeIdCounter(nodeIdCounter + 1);
+    }
   };
 
   // Handle canvas click for adding nodes or selecting nodes for edges
   const handleCanvasClick = (e) => {
-    if (!svgRef.current) return;
+    if (!svgRef.current || isRunning) return;
     
     const svgRect = svgRef.current.getBoundingClientRect();
     const x = e.clientX - svgRect.left;
     const y = e.clientY - svgRect.top;
     
-    if (isAddingNode) {
+    // Check if we clicked on a node first
+    const clickedNode = nodes.find(node => {
+      const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
+      return distance <= 25; // Node radius
+    });
+
+    if (clickedNode) {
+      // If we clicked on a node, handle the node click
+      handleNodeClick(clickedNode);
+    } else if (mode === 'addNode') {
+      // If we're in node adding mode and clicked on empty space, add a node
       addNode(x, y);
-      setIsAddingNode(false);
     }
   };
 
   // Handle node click for edge creation or algorithm starting point
   const handleNodeClick = (node) => {
+    if (isRunning) return; // Don't allow interaction during algorithm execution
+
     if (isAddingEdge) {
       if (!selectedNode) {
         setSelectedNode(node);
@@ -68,9 +86,9 @@ export default function GraphAlgorithmVisualizer() {
           setEdges([...edges, newEdge]);
         }
         setSelectedNode(null);
-        setIsAddingEdge(false);
       }
-    } else if (!isRunning) {
+    } else {
+      // If not adding an edge, set as start node
       setStartNode(node);
     }
   };
@@ -89,6 +107,21 @@ export default function GraphAlgorithmVisualizer() {
   const deleteNode = (nodeId) => {
     setNodes(nodes.filter(node => node.id !== nodeId));
     setEdges(edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
+    if (startNode && startNode.id === nodeId) {
+      setStartNode(null);
+    }
+  };
+
+  // Toggle between node adding mode and edge adding mode
+  const toggleMode = (newMode) => {
+    setMode(newMode);
+    if (newMode === 'addEdge') {
+      setIsAddingEdge(true);
+      setSelectedNode(null);
+    } else {
+      setIsAddingEdge(false);
+      setSelectedNode(null);
+    }
   };
 
   // Run breadth-first search algorithm
@@ -324,6 +357,14 @@ export default function GraphAlgorithmVisualizer() {
     return nodes.find(node => node.id === id);
   };
 
+  // Get cursor style based on current mode
+  const getCursorStyle = () => {
+    if (isRunning) return "not-allowed";
+    if (mode === 'addNode') return "cell";
+    if (isAddingEdge && selectedNode) return "crosshair";
+    return "default";
+  };
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-100">
       {/* Header */}
@@ -334,26 +375,18 @@ export default function GraphAlgorithmVisualizer() {
       {/* Toolbar */}
       <div className="bg-white shadow p-4 flex items-center space-x-4">
         <button 
-          className={`px-3 py-2 rounded ${isAddingNode ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          onClick={() => {
-            setIsAddingNode(!isAddingNode);
-            setIsAddingEdge(false);
-            setSelectedNode(null);
-          }}
+          className={`px-3 py-2 rounded ${mode === 'addNode' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => toggleMode('addNode')}
         >
-          <Plus size={16} className="inline mr-1" /> Add Node
+          <Plus size={16} className="inline mr-1" /> Node Mode
         </button>
         
         <button 
-          className={`px-3 py-2 rounded ${isAddingEdge ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          onClick={() => {
-            setIsAddingEdge(!isAddingEdge);
-            setIsAddingNode(false);
-            setSelectedNode(null);
-          }}
+          className={`px-3 py-2 rounded ${mode === 'addEdge' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => toggleMode('addEdge')}
           disabled={nodes.length < 2}
         >
-          Add Edge
+          Edge Mode
         </button>
         
         <div className="relative">
@@ -445,6 +478,7 @@ export default function GraphAlgorithmVisualizer() {
           ref={svgRef}
           className="w-full h-full"
           onClick={handleCanvasClick}
+          style={{ cursor: getCursorStyle() }}
         >
           {/* Edges */}
           {edges.map((edge, index) => {
@@ -475,8 +509,8 @@ export default function GraphAlgorithmVisualizer() {
             <line 
               x1={selectedNode.x}
               y1={selectedNode.y}
-              x2={500}
-              y2={300}
+              x2="500"
+              y2="300"
               stroke="#999"
               strokeWidth={2}
               strokeDasharray="5,5"
@@ -503,7 +537,10 @@ export default function GraphAlgorithmVisualizer() {
                   fill={fillColor}
                   stroke={isSelected || isStartNode ? "#2c5282" : "#2b6cb0"}
                   strokeWidth={isSelected || isStartNode ? 3 : 1}
-                  onClick={() => handleNodeClick(node)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNodeClick(node);
+                  }}
                   className="cursor-pointer"
                 />
                 <text
@@ -549,8 +586,8 @@ export default function GraphAlgorithmVisualizer() {
       <div className="bg-white p-4 shadow-inner">
         <h3 className="font-bold mb-2">How to use:</h3>
         <ul className="text-sm">
-          <li>• Click "Add Node" then click on the canvas to place nodes</li>
-          <li>• Click "Add Edge" then click on two nodes to connect them</li>
+          <li>• Click anywhere on the canvas to add nodes (Node Mode is default)</li>
+          <li>• Switch to Edge Mode and click on two nodes to connect them</li>
           <li>• Click on a node to set it as the starting point (green node)</li>
           <li>• Select an algorithm from the dropdown menu</li>
           <li>• Click "Start" to visualize the algorithm</li>
