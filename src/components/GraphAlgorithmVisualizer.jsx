@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useRef } from 'react';
-import { Play, Pause, RefreshCw, Plus, ChevronDown, ArrowRight, MinusCircle } from 'lucide-react';
+import { Play, Pause, RefreshCw, Plus, ChevronDown } from 'lucide-react';
 
 export default function GraphAlgorithmVisualizer() {
   const [nodes, setNodes] = useState([]);
@@ -801,7 +801,7 @@ export default function GraphAlgorithmVisualizer() {
   const calculateArrowPosition = (source, target) => {
     const dx = target.x - source.x;
     const dy = target.y - source.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // const dist = Math.sqrt(dx * dx + dy * dy);
     
     // Place arrow 70% along the line
     const x = source.x + dx * 0.7;
