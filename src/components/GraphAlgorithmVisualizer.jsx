@@ -29,7 +29,7 @@ export default function GraphAlgorithmVisualizer() {
       const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
       return distance < 50; // Don't add nodes if they're closer than 50px
     });
-    
+
     if (!tooClose) {
       const newNode = {
         id: nodeIdCounter,
@@ -37,7 +37,7 @@ export default function GraphAlgorithmVisualizer() {
         y: y,
         label: nodeIdCounter.toString()
       };
-      
+
       setNodes([...nodes, newNode]);
       setNodeIdCounter(nodeIdCounter + 1);
     }
@@ -46,11 +46,11 @@ export default function GraphAlgorithmVisualizer() {
   // Handle canvas click for adding nodes or selecting nodes for edges
   const handleCanvasClick = (e) => {
     if (!svgRef.current || isRunning) return;
-    
+
     const svgRect = svgRef.current.getBoundingClientRect();
     const x = e.clientX - svgRect.left;
     const y = e.clientY - svgRect.top;
-    
+
     // Check if we clicked on a node first
     const clickedNode = nodes.find(node => {
       const distance = Math.sqrt(Math.pow(node.x - x, 2) + Math.pow(node.y - y, 2));
@@ -78,11 +78,11 @@ export default function GraphAlgorithmVisualizer() {
         setSelectedNode(node);
       } else if (selectedNode.id !== node.id) {
         // Check if this edge already exists
-        const edgeExists = edges.some(edge => 
-          (edge.source === selectedNode.id && edge.target === node.id) || 
+        const edgeExists = edges.some(edge =>
+          (edge.source === selectedNode.id && edge.target === node.id) ||
           (edgeType === 'undirected' && edge.source === node.id && edge.target === selectedNode.id)
         );
-        
+
         if (!edgeExists) {
           const newEdge = {
             source: selectedNode.id,
@@ -136,7 +136,7 @@ export default function GraphAlgorithmVisualizer() {
   const handleEdgeClick = (edge, e) => {
     e.stopPropagation();
     if (isRunning) return;
-    
+
     setEditingEdge(edge);
     setEdgeWeight(edge.weight);
   };
@@ -144,20 +144,20 @@ export default function GraphAlgorithmVisualizer() {
   // Save edge weight changes
   const saveEdgeWeight = () => {
     if (!editingEdge) return;
-    
-    setEdges(edges.map(edge => 
-      (edge.source === editingEdge.source && edge.target === editingEdge.target) 
-        ? { ...edge, weight: parseInt(edgeWeight) || 1 } 
+
+    setEdges(edges.map(edge =>
+      (edge.source === editingEdge.source && edge.target === editingEdge.target)
+        ? { ...edge, weight: parseInt(edgeWeight) || 1 }
         : edge
     ));
-    
+
     setEditingEdge(null);
   };
 
   // Delete an edge
   const deleteEdge = (edge, e) => {
     e.stopPropagation();
-    setEdges(edges.filter(e => 
+    setEdges(edges.filter(e =>
       !(e.source === edge.source && e.target === edge.target)
     ));
   };
@@ -165,52 +165,52 @@ export default function GraphAlgorithmVisualizer() {
   // Build adjacency list
   const buildAdjList = (directed = false) => {
     const adjList = {};
-    
+
     // Initialize empty arrays for each node
     nodes.forEach(node => {
       adjList[node.id] = [];
     });
-    
+
     // Add edges to adjacency list
     edges.forEach(edge => {
       // For weighted graphs, store node and weight
       adjList[edge.source].push({ node: edge.target, weight: edge.weight });
-      
+
       // If undirected or the specific edge is undirected, add reverse edge
       if ((edge.type === 'undirected' || !directed)) {
         adjList[edge.target].push({ node: edge.source, weight: edge.weight });
       }
     });
-    
+
     return adjList;
   };
 
   // Run breadth-first search algorithm
   const runBFS = () => {
     if (!startNode) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visited = new Set();
     const queue = [startNode.id];
     const visitOrder = [];
     const adjList = buildAdjList();
-    
+
     // BFS animation
     const animateBFS = () => {
       if (queue.length === 0) {
         setIsRunning(false);
         return;
       }
-      
+
       const currentId = queue.shift();
-      
+
       if (!visited.has(currentId)) {
         visited.add(currentId);
         visitOrder.push(currentId);
         setVisitedNodes([...visitOrder]);
-        
+
         // Add unvisited neighbors to queue
         adjList[currentId].forEach(({ node: neighborId }) => {
           if (!visited.has(neighborId)) {
@@ -218,106 +218,106 @@ export default function GraphAlgorithmVisualizer() {
           }
         });
       }
-      
+
       animationRef.current = setTimeout(animateBFS, speed);
     };
-    
+
     animateBFS();
   };
 
   // Run depth-first search algorithm
   const runDFS = () => {
     if (!startNode) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visited = new Set();
     const visitOrder = [];
     const adjList = buildAdjList();
-    
+
     // DFS steps to animate
     const dfsSteps = [];
-    
+
     const dfs = (nodeId) => {
       visited.add(nodeId);
       dfsSteps.push(nodeId);
-      
+
       adjList[nodeId].forEach(({ node: neighborId }) => {
         if (!visited.has(neighborId)) {
           dfs(neighborId);
         }
       });
     };
-    
+
     dfs(startNode.id);
-    
+
     // Animate DFS steps
     let stepIndex = 0;
-    
+
     const animateDFS = () => {
       if (stepIndex >= dfsSteps.length) {
         setIsRunning(false);
         return;
       }
-      
+
       visitOrder.push(dfsSteps[stepIndex]);
       setVisitedNodes([...visitOrder]);
       stepIndex++;
-      
+
       animationRef.current = setTimeout(animateDFS, speed);
     };
-    
+
     animateDFS();
   };
 
   // Run Dijkstra's shortest path algorithm
   const runDijkstra = () => {
     if (!startNode) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visitOrder = [];
     const distances = {};
     const previous = {};
     const unvisited = new Set();
-    
+
     // Initialize
     nodes.forEach(node => {
       distances[node.id] = node.id === startNode.id ? 0 : Infinity;
       previous[node.id] = null;
       unvisited.add(node.id);
     });
-    
+
     // Build adjacency list with weights
     const adjList = buildAdjList();
-    
+
     // Animation steps
     const animationSteps = [];
-    
+
     // Dijkstra algorithm
     while (unvisited.size > 0) {
       // Find node with minimum distance
       let current = null;
       let minDist = Infinity;
-      
+
       unvisited.forEach(nodeId => {
         if (distances[nodeId] < minDist) {
           minDist = distances[nodeId];
           current = nodeId;
         }
       });
-      
+
       // If we can't find a node or all remaining are unreachable
       if (current === null || distances[current] === Infinity) break;
-      
+
       // Add to animation steps
       animationSteps.push(current);
-      
+
       // Remove from unvisited
       unvisited.delete(current);
-      
+
       // Update distances to neighbors
       adjList[current].forEach(neighbor => {
         if (unvisited.has(neighbor.node)) {
@@ -329,19 +329,19 @@ export default function GraphAlgorithmVisualizer() {
         }
       });
     }
-    
+
     // Animate Dijkstra steps
     let stepIndex = 0;
-    
+
     const animateDijkstra = () => {
       if (stepIndex >= animationSteps.length) {
         setIsRunning(false);
         return;
       }
-      
+
       visitOrder.push(animationSteps[stepIndex]);
       setVisitedNodes([...visitOrder]);
-      
+
       // Build current shortest paths for visualization
       const paths = [];
       nodes.forEach(node => {
@@ -350,31 +350,31 @@ export default function GraphAlgorithmVisualizer() {
         }
       });
       setCurrentPath(paths);
-      
+
       stepIndex++;
       animationRef.current = setTimeout(animateDijkstra, speed);
     };
-    
+
     animateDijkstra();
   };
 
   // Run Bellman-Ford algorithm
   const runBellmanFord = () => {
     if (!startNode) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visitOrder = [];
     const distances = {};
     const previous = {};
-    
+
     // Initialize distances
     nodes.forEach(node => {
       distances[node.id] = node.id === startNode.id ? 0 : Infinity;
       previous[node.id] = null;
     });
-    
+
     // Extract all edges in format suitable for Bellman-Ford
     const edgeList = edges.flatMap(edge => {
       const forwardEdge = {
@@ -382,7 +382,7 @@ export default function GraphAlgorithmVisualizer() {
         target: edge.target,
         weight: edge.weight
       };
-      
+
       if (edge.type === 'undirected') {
         const reverseEdge = {
           source: edge.target,
@@ -391,67 +391,67 @@ export default function GraphAlgorithmVisualizer() {
         };
         return [forwardEdge, reverseEdge];
       }
-      
+
       return [forwardEdge];
     });
-    
+
     // Animation steps
     const animationSteps = [];
-    
+
     // Bellman-Ford algorithm
     for (let i = 0; i < nodes.length - 1; i++) {
       let updated = false;
-      
+
       edgeList.forEach(edge => {
         if (distances[edge.source] !== Infinity) {
           const newDist = distances[edge.source] + edge.weight;
-          
+
           if (newDist < distances[edge.target]) {
             distances[edge.target] = newDist;
             previous[edge.target] = edge.source;
             updated = true;
-            
+
             if (!animationSteps.includes(edge.target)) {
               animationSteps.push(edge.target);
             }
           }
         }
       });
-      
+
       if (!updated) break;
     }
-    
+
     // Check for negative cycles
     let hasNegativeCycle = false;
-    
+
     edgeList.forEach(edge => {
       if (distances[edge.source] !== Infinity) {
         const newDist = distances[edge.source] + edge.weight;
-        
+
         if (newDist < distances[edge.target]) {
           hasNegativeCycle = true;
         }
       }
     });
-    
+
     if (hasNegativeCycle) {
       alert("Graph contains a negative cycle!");
       setIsRunning(false);
       return;
     }
-    
+
     // Animate Bellman-Ford steps
     let stepIndex = 0;
-    
+
     const animateBellmanFord = () => {
       if (stepIndex >= animationSteps.length) {
         setIsRunning(false);
         return;
       }
-      
+
       visitOrder.push(animationSteps[stepIndex]);
       setVisitedNodes([...visitOrder]);
-      
+
       // Build current shortest paths for visualization
       const paths = [];
       nodes.forEach(node => {
@@ -460,57 +460,57 @@ export default function GraphAlgorithmVisualizer() {
         }
       });
       setCurrentPath(paths);
-      
+
       stepIndex++;
       animationRef.current = setTimeout(animateBellmanFord, speed);
     };
-    
+
     animateBellmanFord();
   };
 
   // Run Floyd-Warshall algorithm
   const runFloydWarshall = () => {
     if (!startNode) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visitOrder = [];
     const nodeIds = nodes.map(node => node.id);
-    
+
     // Initialize distance matrix
     const dist = {};
     const next = {};
-    
+
     // Set initial distances
     nodeIds.forEach(i => {
       dist[i] = {};
       next[i] = {};
-      
+
       nodeIds.forEach(j => {
         dist[i][j] = Infinity;
         next[i][j] = null;
       });
-      
+
       // Distance to self is 0
       dist[i][i] = 0;
     });
-    
+
     // Set distances for direct edges
     edges.forEach(edge => {
       dist[edge.source][edge.target] = edge.weight;
       next[edge.source][edge.target] = edge.target;
-      
+
       // If undirected, add reverse edge
       if (edge.type === 'undirected') {
         dist[edge.target][edge.source] = edge.weight;
         next[edge.target][edge.source] = edge.source;
       }
     });
-    
+
     // Animation steps for Floyd-Warshall
     const animationSteps = [];
-    
+
     // Floyd-Warshall algorithm
     nodeIds.forEach(k => {
       nodeIds.forEach(i => {
@@ -518,7 +518,7 @@ export default function GraphAlgorithmVisualizer() {
           if (dist[i][k] + dist[k][j] < dist[i][j]) {
             dist[i][j] = dist[i][k] + dist[k][j];
             next[i][j] = next[i][k];
-            
+
             if (i === startNode.id && !animationSteps.includes(j)) {
               animationSteps.push(j);
             }
@@ -526,22 +526,22 @@ export default function GraphAlgorithmVisualizer() {
         });
       });
     });
-    
+
     // Animate Floyd-Warshall steps
     let stepIndex = 0;
-    
+
     const animateFloydWarshall = () => {
       if (stepIndex >= animationSteps.length) {
         setIsRunning(false);
         return;
       }
-      
+
       visitOrder.push(animationSteps[stepIndex]);
       setVisitedNodes([...visitOrder]);
-      
+
       // Build current paths for visualization
       const paths = [];
-      
+
       nodeIds.forEach(targetId => {
         if (startNode.id !== targetId && next[startNode.id][targetId]) {
           let currentNode = startNode.id;
@@ -552,53 +552,53 @@ export default function GraphAlgorithmVisualizer() {
           }
         }
       });
-      
+
       setCurrentPath(paths);
-      
+
       stepIndex++;
       animationRef.current = setTimeout(animateFloydWarshall, speed);
     };
-    
+
     animateFloydWarshall();
   };
 
   // Run cycle detection algorithm
   const runCycleDetection = () => {
     if (!nodes.length) return;
-    
+
     resetVisualization();
     setIsRunning(true);
-    
+
     const visited = new Set();
     const recursionStack = new Set();
     const visitOrder = [];
     const cycles = [];
-    
+
     const adjList = {};
-    
+
     // Build adjacency list based on edge type
     nodes.forEach(node => {
       adjList[node.id] = [];
     });
-    
+
     edges.forEach(edge => {
       adjList[edge.source].push(edge.target);
-      
+
       if (edge.type === 'undirected') {
         adjList[edge.target].push(edge.source);
       }
     });
-    
+
     // DFS based cycle detection
     const detectCycle = (nodeId, parent = null) => {
       visited.add(nodeId);
       recursionStack.add(nodeId);
       visitOrder.push(nodeId);
-      
+
       for (const neighbor of adjList[nodeId]) {
         // Skip parent in undirected graph
         if (neighbor === parent) continue;
-        
+
         if (!visited.has(neighbor)) {
           if (detectCycle(neighbor, nodeId)) {
             cycles.push({ from: nodeId, to: neighbor });
@@ -609,11 +609,11 @@ export default function GraphAlgorithmVisualizer() {
           return true;
         }
       }
-      
+
       recursionStack.delete(nodeId);
       return false;
     };
-    
+
     // Try to detect cycle starting from each unvisited node
     let hasCycle = false;
     for (const node of nodes) {
@@ -624,10 +624,10 @@ export default function GraphAlgorithmVisualizer() {
         }
       }
     }
-    
+
     // Animation steps
     let stepIndex = 0;
-    
+
     const animateCycleDetection = () => {
       if (stepIndex >= visitOrder.length) {
         if (hasCycle) {
@@ -639,13 +639,13 @@ export default function GraphAlgorithmVisualizer() {
         setIsRunning(false);
         return;
       }
-      
+
       setVisitedNodes(visitOrder.slice(0, stepIndex + 1));
       stepIndex++;
-      
+
       animationRef.current = setTimeout(animateCycleDetection, speed);
     };
-    
+
     animateCycleDetection();
   };
 
@@ -653,17 +653,17 @@ export default function GraphAlgorithmVisualizer() {
   const runUnionFind = () => {
     resetVisualization();
     setIsRunning(true);
-    
+
     const visitOrder = [];
     const parent = {};
     const rank = {};
-    
+
     // Initialize each node as its own parent
     nodes.forEach(node => {
       parent[node.id] = node.id;
       rank[node.id] = 0;
     });
-    
+
     // Find with path compression
     const find = (nodeId) => {
       if (parent[nodeId] !== nodeId) {
@@ -671,14 +671,14 @@ export default function GraphAlgorithmVisualizer() {
       }
       return parent[nodeId];
     };
-    
+
     // Union by rank
     const union = (x, y) => {
       const rootX = find(x);
       const rootY = find(y);
-      
+
       if (rootX === rootY) return;
-      
+
       if (rank[rootX] < rank[rootY]) {
         parent[rootX] = rootY;
       } else if (rank[rootX] > rank[rootY]) {
@@ -688,31 +688,31 @@ export default function GraphAlgorithmVisualizer() {
         rank[rootX]++;
       }
     };
-    
+
     // Process all edges
     const edgeList = edges.map(edge => ({
       source: edge.source,
       target: edge.target
     }));
-    
+
     // Sort edges if needed (for MST algorithms)
     // edgeList.sort((a, b) => a.weight - b.weight);
-    
+
     // Animation steps
     const animationSteps = [];
     const connectedComponents = {};
-    
+
     // Process each edge for animation
     edgeList.forEach(edge => {
       const rootSource = find(edge.source);
       const rootTarget = find(edge.target);
-      
+
       if (rootSource !== rootTarget) {
         union(edge.source, edge.target);
         animationSteps.push({ from: edge.source, to: edge.target });
       }
     });
-    
+
     // Find final components for coloring
     nodes.forEach(node => {
       const root = find(node.id);
@@ -722,41 +722,41 @@ export default function GraphAlgorithmVisualizer() {
       connectedComponents[root].push(node.id);
       visitOrder.push(node.id);
     });
-    
+
     // Animation
     let stepIndex = 0;
-    
+
     const animateUnionFind = () => {
       if (stepIndex >= animationSteps.length) {
         // Show final connected components
         setVisitedNodes(visitOrder);
-        
+
         // Create color-coded components
         let componentCount = Object.keys(connectedComponents).length;
         alert(`Graph has ${componentCount} connected component(s)`);
-        
+
         setIsRunning(false);
         return;
       }
-      
+
       setCurrentPath(animationSteps.slice(0, stepIndex + 1));
       stepIndex++;
-      
+
       animationRef.current = setTimeout(animateUnionFind, speed);
     };
-    
+
     animateUnionFind();
   };
 
   // Start algorithm visualization
   const startVisualization = () => {
     if (isRunning) return;
-    
+
     if (selectedAlgorithm !== 'unionFind' && !startNode) {
       alert("Please select a starting node first!");
       return;
     }
-    
+
     switch (selectedAlgorithm) {
       case 'bfs':
         runBFS();
@@ -802,14 +802,14 @@ export default function GraphAlgorithmVisualizer() {
     const dx = target.x - source.x;
     const dy = target.y - source.y;
     // const dist = Math.sqrt(dx * dx + dy * dy);
-    
+
     // Place arrow 70% along the line
     const x = source.x + dx * 0.7;
     const y = source.y + dy * 0.7;
-    
+
     // Calculate angle for arrow rotation
     const angle = Math.atan2(dy, dx);
-    
+
     return { x, y, angle };
   };
 
@@ -827,27 +827,27 @@ export default function GraphAlgorithmVisualizer() {
       <div className="bg-blue-600 text-white p-4 flex justify-center">
         <h1 className="text-2xl font-bold">Graph Algorithm Visualizer</h1>
       </div>
-      
+
       {/* Toolbar */}
       <div className="bg-white shadow p-4 flex flex-wrap items-center gap-4">
-        <button 
+        <button
           className={`px-3 py-2 rounded ${mode === 'addNode' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           onClick={() => toggleMode('addNode')}
         >
           <Plus size={16} className="inline mr-1" /> Node Mode
         </button>
-        
-        <button 
+
+        <button
           className={`px-3 py-2 rounded ${mode === 'addEdge' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           onClick={() => toggleMode('addEdge')}
           disabled={nodes.length < 2}
         >
           Edge Mode
         </button>
-        
+
         <div className="flex items-center gap-2">
           <span>Edge Type:</span>
-          <select 
+          <select
             value={edgeType}
             onChange={(e) => setEdgeType(e.target.value)}
             className="border rounded px-2 py-1"
@@ -856,9 +856,9 @@ export default function GraphAlgorithmVisualizer() {
             <option value="directed">Directed</option>
           </select>
         </div>
-        
+
         <div className="relative">
-          <button 
+          <button
             className="px-3 py-2 bg-gray-200 rounded flex items-center"
             onClick={() => setShowAlgorithmMenu(!showAlgorithmMenu)}
           >
@@ -871,11 +871,11 @@ export default function GraphAlgorithmVisualizer() {
             {selectedAlgorithm === 'unionFind' && 'Union-Find Algorithm'}
             <ChevronDown size={16} className="ml-2" />
           </button>
-          
+
           {showAlgorithmMenu && (
             <div className="absolute z-10 bg-white shadow-lg rounded mt-1 w-64">
               <ul>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('bfs');
@@ -884,7 +884,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Breadth-First Search
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('dfs');
@@ -893,7 +893,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Depth-First Search
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('dijkstra');
@@ -902,7 +902,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Dijkstra's Algorithm
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('bellmanFord');
@@ -911,7 +911,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Bellman-Ford Algorithm
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('floydWarshall');
@@ -920,7 +920,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Floyd-Warshall Algorithm
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('cycleDetection');
@@ -929,7 +929,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   Detect Cycle in a Graph
                 </li>
-                <li 
+                <li
                   className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => {
                     setSelectedAlgorithm('unionFind');
@@ -941,64 +941,64 @@ export default function GraphAlgorithmVisualizer() {
               </ul>
             </div>
           )}
-</div>
-        
+        </div>
+
         <div className="flex items-center">
           <span className="mr-2">Speed:</span>
-          <input 
-            type="range" 
-            min="100" 
-            max="1000" 
-            step="100" 
-            value={speed} 
+          <input
+            type="range"
+            min="100"
+            max="1000"
+            step="100"
+            value={speed}
             onChange={(e) => setSpeed(parseInt(e.target.value))}
             className="w-32"
           />
         </div>
-        
-        <button 
+
+        <button
           className="px-3 py-2 bg-green-500 text-white rounded flex items-center"
           onClick={startVisualization}
           disabled={isRunning}
         >
           <Play size={16} className="mr-1" /> Start
         </button>
-        
-        <button 
+
+        <button
           className="px-3 py-2 bg-red-500 text-white rounded flex items-center"
           onClick={stopVisualization}
           disabled={!isRunning}
         >
           <Pause size={16} className="mr-1" /> Stop
         </button>
-        
-        <button 
+
+        <button
           className="px-3 py-2 bg-gray-500 text-white rounded flex items-center"
           onClick={resetVisualization}
         >
           <RefreshCw size={16} className="mr-1" /> Reset
         </button>
       </div>
-      
+
       {/* Edge Weight Editor */}
       {editingEdge && (
         <div className="bg-white shadow p-4 flex items-center space-x-4">
           <span>Edit Edge Weight:</span>
-          <input 
-            type="number" 
+          <input
+            type="number"
             value={edgeWeight}
             min={-100}
             max={100}
             onChange={(e) => setEdgeWeight(parseInt(e.target.value) || 1)}
             className="border rounded px-2 py-1 w-16"
           />
-          <button 
+          <button
             className="px-3 py-1 bg-green-500 text-white rounded"
             onClick={saveEdgeWeight}
           >
             Save
           </button>
-          <button 
+          <button
             className="px-3 py-1 bg-gray-500 text-white rounded"
             onClick={() => setEditingEdge(null)}
           >
@@ -1006,33 +1006,35 @@ export default function GraphAlgorithmVisualizer() {
           </button>
         </div>
       )}
-      
+
       {/* Canvas */}
-      <div className="flex-1 relative overflow-hidden">
-        <svg 
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: '600px' }}>
+        <svg
           ref={svgRef}
           className="w-full h-full"
           onClick={handleCanvasClick}
           style={{ cursor: getCursorStyle() }}
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 1000 600"
         >
           {/* Edges */}
           {edges.map((edge, index) => {
             const sourceNode = getNodeById(edge.source);
             const targetNode = getNodeById(edge.target);
             if (!sourceNode || !targetNode) return null;
-            
+
             const isPathEdge = currentPath.some(
-              path => (path.from === edge.source && path.to === edge.target) || 
-                     (path.from === edge.target && path.to === edge.source)
+              path => (path.from === edge.source && path.to === edge.target) ||
+                (path.from === edge.target && path.to === edge.source)
             );
-            
+
             const lineColor = isPathEdge ? "#ff6b00" : "#999";
             const lineWidth = isPathEdge ? 3 : 2;
-            
+
             // Calculate midpoint for weight label
             const midX = (sourceNode.x + targetNode.x) / 2;
             const midY = (sourceNode.y + targetNode.y) / 2;
-            
+
             // Offset the label slightly
             const dx = targetNode.x - sourceNode.x;
             const dy = targetNode.y - sourceNode.y;
@@ -1040,10 +1042,10 @@ export default function GraphAlgorithmVisualizer() {
             const offset = 15;
             const labelX = midX + offset * Math.sin(angle);
             const labelY = midY - offset * Math.cos(angle);
-            
+
             return (
               <g key={`edge-${index}`} onClick={(e) => handleEdgeClick(edge, e)}>
-                <line 
+                <line
                   x1={sourceNode.x}
                   y1={sourceNode.y}
                   x2={targetNode.x}
@@ -1052,9 +1054,9 @@ export default function GraphAlgorithmVisualizer() {
                   strokeWidth={lineWidth}
                   className="cursor-pointer"
                 />
-                
+
                 {/* Weight label */}
-                <circle 
+                <circle
                   cx={labelX}
                   cy={labelY}
                   r={12}
@@ -1070,7 +1072,7 @@ export default function GraphAlgorithmVisualizer() {
                 >
                   {edge.weight}
                 </text>
-                
+
                 {/* Arrow for directed edges */}
                 {edge.type === 'directed' && (
                   <g>
@@ -1086,9 +1088,9 @@ export default function GraphAlgorithmVisualizer() {
                     })()}
                   </g>
                 )}
-                
+
                 {/* Delete edge button */}
-                <g 
+                <g
                   transform={`translate(${midX - 30}, ${midY - 30})`}
                   onClick={(e) => deleteEdge(edge, e)}
                   className="cursor-pointer"
@@ -1114,10 +1116,10 @@ export default function GraphAlgorithmVisualizer() {
               </g>
             );
           })}
-          
+
           {/* Current edge being created */}
           {selectedNode && isAddingEdge && (
-            <line 
+            <line
               x1={selectedNode.x}
               y1={selectedNode.y}
               x2="500"
@@ -1127,18 +1129,18 @@ export default function GraphAlgorithmVisualizer() {
               strokeDasharray="5,5"
             />
           )}
-          
+
           {/* Nodes */}
           {nodes.map((node) => {
             const isVisited = visitedNodes.includes(node.id);
             const isStartNode = startNode && startNode.id === node.id;
             const isSelected = selectedNode && selectedNode.id === node.id;
-            
+
             let fillColor = "#4299e1"; // Default blue
             if (isStartNode) fillColor = "#48bb78"; // Green
             if (isVisited) fillColor = "#f56565"; // Red
             if (isSelected) fillColor = "#ed8936"; // Orange
-            
+
             return (
               <g key={`node-${node.id}`}>
                 <circle
@@ -1192,7 +1194,7 @@ export default function GraphAlgorithmVisualizer() {
           })}
         </svg>
       </div>
-      
+
       {/* Instructions Panel */}
       <div className="bg-white p-4 shadow-inner">
         <h3 className="font-bold mb-2">How to use:</h3>
